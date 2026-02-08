@@ -7,7 +7,7 @@ theme = 'PaperMod'
     # Use equals signs (=) instead of colons (:)
     [params.homeInfoParams]
         Title = "Rafael Reno"
-        Content = "Quant. Sailor. Artist. | Markets | Science | Sports | Logbook"
+        Content = "Iron"
 
 [menu]
   [[menu.main]]
