@@ -1,0 +1,25 @@
+baseURL = '/'
+languageCode = 'en-us'
+title = 'Rafael Reno'
+theme = 'PaperMod'
+
+[menu]
+  [[menu.main]]
+    name = "Markets"
+    url = "/markets"
+    weight = 10
+  [[menu.main]]
+    name = "Science"
+    url = "/science"
+    weight = 20
+  [[menu.main]]
+    name = "Sports"
+    url = "/sports"
+    weight = 30
+  [[menu.main]]
+    name = "Logbook"
+    url = "/logbook"
+    weight = 40
+
+[params]
+  defaultTheme = "auto"
