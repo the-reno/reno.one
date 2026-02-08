@@ -1,7 +1,13 @@
-baseURL = '/'
+baseURL = 'https://reno-one.vercel.app/' # Replace with your actual Vercel URL
 languageCode = 'en-us'
 title = 'Rafael Reno'
 theme = 'PaperMod'
+
+[params]
+    # This tells PaperMod to show a nice "Profile Mode" on the homepage
+    homeInfoParams:
+        Title: "Rafael Reno"
+        Content: "Quant. Sailor. Artist. | Markets | Science | Sports | Logbook"
 
 [menu]
   [[menu.main]]
@@ -20,6 +26,3 @@ theme = 'PaperMod'
     name = "Logbook"
     url = "/logbook"
     weight = 40
-
-[params]
-  defaultTheme = "auto"
