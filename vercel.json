@@ -1,0 +1,4 @@
+{
+  "framework": "hugo",
+  "installCommand": "git submodule update --init --recursive"
+}
