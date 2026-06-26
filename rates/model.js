@@ -1,0 +1,22 @@
+const TENORS=['ON','1M','2M','3M','6M'];const STEPS={ON:1,'1M':1,'2M':2,'3M':3,'6M':6};let rates=[],calc=[],out=[];
+function localDate(s){let a=String(s).slice(0,10).split('-').map(Number);return new Date(a[0],a[1]-1,a[2]);}
+function fmtDate(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function key(d){return new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime();}
+function parseRate(x){x=String(x||'').trim();if(x.endsWith('%'))return parseFloat(x)/100;let v=parseFloat(x);return v>1?v/100:v;}
+function factorText(x){return Number.isFinite(x)?Number(x).toFixed(6):'';}
+function addDays(d,n){let x=new Date(d);x.setDate(x.getDate()+n);return x;}
+function addMonths(d,n){let x=new Date(d),day=x.getDate();x.setMonth(x.getMonth()+n);if(x.getDate()<day)x.setDate(0);return x;}
+function isBiz(d){let w=d.getDay();return w!==0&&w!==6;}
+function createFlatCurve(){let s=localDate(curveStart.value),e=localDate(curveEnd.value),r=parseRate(flatRate.value);let rows=['Date,ON,1M,2M,3M,6M'];for(let d=new Date(s);d<=e;d=addDays(d,1)){if(isBiz(d))rows.push([fmtDate(d),r,r,r,r,r].join(','));}csv.value=rows.join('\n');statusBox.innerHTML='<span class="ok">Flat curve created.</span>';}
+function parseCurve(){let lines=csv.value.trim().split(/\r?\n/).filter(Boolean);let headers=lines[0].split(',').map(x=>x.trim().toUpperCase());let idx={};headers.forEach((h,i)=>idx[h]=i);rates=[];for(let i=1;i<lines.length;i++){let c=lines[i].split(',').map(x=>x.trim());let row={Date:localDate(c[idx.DATE])};TENORS.forEach(t=>row[t]=parseRate(c[idx[t]]));rates.push(row);}rates.sort((a,b)=>a.Date-b.Date);}
+function firstRateOnOrAfter(d){let k=key(d);for(let r of rates){if(key(r.Date)>=k)return r.Date;}return null;}
+function previousCalcDate(d){let k=key(d),best=null;for(let r of calc){if(key(r.Date)<=k)best=r.Date;else break;}if(!best)throw new Error('No curve date on or before '+fmtDate(d));return best;}
+function calcRow(d){let k=key(d);return calc.find(r=>key(r.Date)===k);}
+function buildCurveCalc(){calc=[];for(let rr of rates){let row={Date:rr.Date};for(let t of TENORS){let end=t==='ON'?firstRateOnOrAfter(addDays(rr.Date,1)):firstRateOnOrAfter(addMonths(rr.Date,parseInt(t)));row[t+'_Rate']=rr[t];row[t+'_End']=end;if(end&&Number.isFinite(rr[t])){let days=(end-rr.Date)/86400000;row[t+'_Factor']=1+rr[t]*days/360;}else{row[t+'_Factor']='';}}calc.push(row);}}
+function rollDates(finalDate,years){let months=Math.round(years*12);let final=previousCalcDate(finalDate);let arr=[final];for(let i=1;i<=months;i++)arr.push(previousCalcDate(addMonths(final,-i)));return arr.reverse();}
+function periodFactor(start,end,tenor){let r=calcRow(start);if(!r)return'';let rate=r[tenor+'_Rate'];if(!Number.isFinite(rate))return'';let days=(end-start)/86400000;return 1+rate*days/360;}
+function buildMonthly(){out=[];let analysis=previousCalcDate(localDate(analysisDate.value));let rolls=rollDates(analysis,parseFloat(periodYears.value));for(let i=0;i<rolls.length-1;i++){out.push({AnalysisDate:analysis,Start:rolls[i],End:rolls[i+1],ON:periodFactor(rolls[i],rolls[i+1],'ON'),M1:periodFactor(rolls[i],rolls[i+1],'1M'),M2:'',M3:'',M6:''});}for(let pair of [['2M','M2'],['3M','M3'],['6M','M6']]){let n=STEPS[pair[0]];for(let j=n-1;j<out.length;j++){out[j][pair[1]]=periodFactor(out[j-n+1].Start,out[j].End,pair[0]);}}}
+function validate(){let last=out[out.length-1];let cols={ON:'ON',M1:'1M',M2:'2M',M3:'3M',M6:'6M'};let parts=[];for(let k of Object.keys(cols)){parts.push(Number.isFinite(last[k])?'<span class="ok">'+cols[k]+' settles final</span>':'<span class="err">'+cols[k]+' missing</span>');}validation.innerHTML='Final row end: <b>'+fmtDate(last.End)+'</b> | '+parts.join(' | ');}
+function runModel(){try{parseCurve();buildCurveCalc();buildMonthly();validate();renderMonthly();statusBox.innerHTML='<span class="ok">Model completed.</span>';}catch(e){statusBox.innerHTML='<span class="err">'+e.message+'</span>';}}
+function renderMonthly(){let heads=['AnalysisDate','Start','End','ON_Factor','1M_Factor','2M_Factor','3M_Factor','6M_Factor'];let rows=out.map(r=>[fmtDate(r.AnalysisDate),fmtDate(r.Start),fmtDate(r.End),factorText(r.ON),factorText(r.M1),factorText(r.M2),factorText(r.M3),factorText(r.M6)]);monthlyTable.innerHTML='<tr>'+heads.map((h,i)=>'<th class="'+(i<3?'left':'')+'">'+h+'</th>').join('')+'</tr>'+rows.map(r=>'<tr>'+r.map((x,i)=>'<td class="'+(i<3?'left':'')+'">'+x+'</td>').join('')+'</tr>').join('');}
+createFlatCurve();
